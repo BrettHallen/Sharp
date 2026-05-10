@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Sharp_RAM_Card")(type "KiCad")(uri "${KIPRJMOD}/Sharp_RAM_Card.pretty")(options "")(descr ""))
+)

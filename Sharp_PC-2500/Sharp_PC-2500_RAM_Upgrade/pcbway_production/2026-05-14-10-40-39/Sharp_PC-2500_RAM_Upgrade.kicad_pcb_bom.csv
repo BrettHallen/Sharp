@@ -1,0 +1,5 @@
+﻿Designator,Quantity,Value,Footprint,Package,MPN,DNP,Mount_Type,Description
+C1,1,100nF,C_Disc_D3.8mm_W2.6mm_P2.50mm,,,,tht,Unpolarized capacitor
+J2,1,FPC,Sharp PC-2500 30-pin TFC Connector,,,,tht,"Generic connector, single row, 01x30, script generated (kicad-library-utils/schlib/autogen/connector/)"
+U1,1,74HCT04,DIP-14_W7.62mm,,,,tht,Hex Inverter
+U2,1,62256,DIP-28_W15.24mm,,,,tht,"32,768-word × 8-bit High Speed CMOS Static RAM, 70ns, DIP-28"

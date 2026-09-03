@@ -31,3 +31,6 @@ Service manual for the PC-1350 and PC-2500.  The PC-1350 is included as it has t
 ## [Internal RAM Upgrade](/Sharp_PC-2500/Sharp_PC-2500_RAM_Upgrade)
 My idea to replace the RAM card interface PCB with a 16KB RAM upgrade to permanently give the machine 20KB of RAM.
 
+## [Programmes](/Sharp_PC-2500/Programmes)
+- Ski Jump (from the manual)
+

@@ -28,9 +28,13 @@ Service manual for the PC-1350 and PC-2500.  The PC-1350 is included as it has t
 - [Part 1: First Look & Starting Repairs](https://youtu.be/iG-5hE-S3hM)
 - [Part 2: RAM Card & Further Repairs](https://youtu.be/53tDbK7_jwQ)
 - [Part 3: A working machine!](https://youtu.be/MAOv5fjzpVc)
+- [Part 4: SKI JUMP Game](https://youtu.be/hhp-MKJ1q-c)
 
 ## [Internal RAM Upgrade](/Sharp_PC-2500/Sharp_PC-2500_RAM_Upgrade)
 My idea to replace the RAM card interface PCB with a 16KB RAM upgrade to permanently give the machine 20KB of RAM.
+
+## [Expansion Breakout Board](/Sharp_PC-2500/Sharp_PC-2500_Expansion_Breakout)
+A breakout board for the RAM CARD interface.<br>
 
 ## [Programmes](/Sharp_PC-2500/Programmes)
 - Ski Jump (from the manual)

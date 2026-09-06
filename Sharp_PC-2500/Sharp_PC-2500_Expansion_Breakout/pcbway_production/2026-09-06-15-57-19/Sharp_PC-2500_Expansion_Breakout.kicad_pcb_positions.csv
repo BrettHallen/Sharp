@@ -1,0 +1,9 @@
+﻿pos_x,pos_y,rotation,side,designator,mpn,pack,footprint,value,mount_type
+124.0,-45.0,0.0,top,H1,,,MountingHole_3.2mm_M3,MountingHole,tht
+124.0,-106.0,0.0,top,H2,,,MountingHole_3.2mm_M3,MountingHole,tht
+93.0,-108.0,0.0,top,H3,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole_Pad,tht
+87.73,-58.93,0.0,top,J1,,,Sharp PC-2500 30-pin TFC Connector,FPC,tht
+139.165,-44.325,0.0,top,J2,,,PinHeader_1x08_P2.54mm_Horizontal,DATA BUS,tht
+139.165,-69.09,0.0,top,J3,,,PinHeader_1x14_P2.54mm_Horizontal,ADDRESS BUS,tht
+106.78,-44.325,0.0,top,J4,,,PinHeader_1x05_P2.54mm_Horizontal,CONTROL,tht
+113.825,-94.49,0.0,top,J5,,,PinHeader_1x03_P2.54mm_Horizontal,POWER,tht

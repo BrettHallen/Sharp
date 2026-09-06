@@ -1,0 +1,6 @@
+﻿Designator,Quantity,Value,Footprint,Package,MPN,DNP,Mount_Type,Description,KiLib_Generator
+J1,1,FPC,Sharp PC-2500 30-pin TFC Connector,,,,tht,"Generic connector, single row, 01x30, script generated (kicad-library-utils/schlib/autogen/connector/)",
+J2,1,DATA BUS,PinHeader_1x08_P2.54mm_Horizontal,,,,tht,"Generic connector, single row, 01x08, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/pin_header_socket
+J3,1,ADDRESS BUS,PinHeader_1x14_P2.54mm_Horizontal,,,,tht,"Generic connector, single row, 01x14, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/pin_header_socket
+J4,1,CONTROL,PinHeader_1x05_P2.54mm_Horizontal,,,,tht,"Generic connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/pin_header_socket
+J5,1,POWER,PinHeader_1x03_P2.54mm_Horizontal,,,,tht,"Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/pin_header_socket

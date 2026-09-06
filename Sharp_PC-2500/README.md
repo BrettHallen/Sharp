@@ -1,5 +1,7 @@
 # Sharp PC-2500
-The Sharp PC-2500 was a development of the Sharp PC-1350.  There was also a PC-2500S model - we believe this indicates the domestic Japanese version.<br>
+The Sharp PC-2500 was a development of the Sharp PC-1350.  There were two models:<br>
+- PC-2500 (export version)
+- PC-2500S (domestic Japanese version)
 
 It's an A4 format Portable Computer ... or Electronic Calculator depending on which side of the case you look at ... that runs S-BASIC and has built-in business applications.  <br>
 

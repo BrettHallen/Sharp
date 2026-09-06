@@ -39,5 +39,7 @@ My idea to replace the RAM card interface PCB with a 16KB RAM upgrade to permane
 A breakout board for the RAM CARD interface.<br>
 
 ## [Programmes](/Sharp_PC-2500/Programmes)
+I'm not aware of any programs available for this computer apart from CommAid.  The manual does have a section on how to convert programs for the PC-1210, PC-1245, PC-1260, PC-1350 and PC-1401.<br>
+
 - Ski Jump (from the manual)
 

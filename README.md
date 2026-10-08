@@ -6,7 +6,7 @@ So far:
 - Sharp PC-1350
 - Sharp PC-2500
 
-## [Sharp MZ-80B](https://github.com/BrettHallen/Sharp-MZ-80B)
+## [Sharp MZ-80B](/Sharp_MZ-80B)
 Currently still under its own repository but I'll move it here at some stage.
 
 ## [Sharp PC-1350](/Sharp_PC-1350)

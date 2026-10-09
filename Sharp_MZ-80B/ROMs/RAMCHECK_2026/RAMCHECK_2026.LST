@@ -1,0 +1,670 @@
+# File RAMCHECK.ASM
+0000			;===================================================================== 
+0000			; 
+0000			;   MZ-80B  RAM CHECKER 
+0000			; 
+0000			;   Re-creation of the Sharp service "RAM CHECKER" boot ROM described in 
+0000			;   the MZ-80B Service Manual, pages 14-15 ("How to Use RAM CHECKER"). 
+0000			; 
+0000			;   Fit in place of the 2 KB IPL (boot) ROM and switch on.  RAM TEST-1 and 
+0000			;   RAM TEST-2 run automatically over the whole 64 KB, first $0000-$7FFF 
+0000			;   (RAM (I)/(II) blocks) and then $8000-$FFFF (RAM (III)/(IV) blocks): 
+0000			; 
+0000			;        RAM TEST-1   0000-OK 
+0000			;                     4000-OK 
+0000			;        RAM TEST-2   00 FF 00 FF F0 OK 
+0000			; 
+0000			;        RAM TEST-1   8000-OK 
+0000			;                     C000-OK 
+0000			;        RAM TEST-2   00 FF 00 FF F0 OK 
+0000			; 
+0000			;   RAM TEST-1 : per 16 KB block, write/read $00 then $FF at every byte. 
+0000			;                Error shown as   ER-235B-00, 01   (address-written, read) 
+0000			;   RAM TEST-2 : a) $00 up   b) $FF up   c) $00 down   d) $FF down 
+0000			;                e) $F0/$0F alternating up, then $0F/$F0 down ("vice versa") 
+0000			;                Each pass fills its range (reading every byte straight back) 
+0000			;                and then re-verifies the whole range. 
+0000			;                Error shown as   ER-23FF-01      (address-read data) 
+0000			;                after the label of the failing pass (00/FF/00/FF/F0). 
+0000			;   On any error the check stops at that address (as in the manual).  As an 
+0000			;   addition to the original, the bottom of the screen also shows the 
+0000			;   written/read data, the RAM block and the IC number(s) to check, using 
+0000			;   the chip numbering of the figure on manual p.15 (RAM 1..32). 
+0000			; 
+0000			;   --------------------------------------------------------------------- 
+0000			;   How the whole 64 KB is reached 
+0000			;   --------------------------------------------------------------------- 
+0000			;   IPL state (after power-on / IPL reset, 8255 PC1 = 0): 
+0000			;        $0000-$07FF  this ROM 
+0000			;        $8000-$FFFF  RAM physical $0000-$7FFF      <- tested in phase 1 
+0000			;   Normal state (after 8255 PC1 = 1, "NST"): 
+0000			;        $0000-$FFFF  RAM physical $0000-$FFFF      <- $8000-$FFFF in phase 2 
+0000			;   In both states, PIO port A bit 7 = 1 overlays the 2 KB text V-RAM at 
+0000			;   $D000-$D7FF.  The test loops switch the overlay off so the RAM beneath 
+0000			;   is tested too; the CRT always shows V-RAM, so the display is unaffected. 
+0000			; 
+0000			;   No main RAM is used for anything other than the test itself: 
+0000			;   - the stack and the few work variables live in the unused tail of the 
+0000			;     text V-RAM ($D7D0-$D7FF, beyond the 2000 bytes of an 80x25 screen); 
+0000			;   - every test loop runs purely in registers with the overlay off, and 
+0000			;     only turns the overlay back on before it touches the stack (RET). 
+0000			; 
+0000			;   To reach $8000-$FFFF the ROM is copied to physical $0000 (CPU $8000 in 
+0000			;   IPL state), verified, and the copy's entry jump is patched to PHASE2. 
+0000			;   Then PC1 is set.  Whether the NST line resets the CPU (restart at $0000 
+0000			;   -> JP PHASE2 in the copy) or simply re-maps memory (execution carries 
+0000			;   on in the identical copy), the program arrives at PHASE2 either way. 
+0000			;   PHASE2 checks it really is running from RAM before continuing. 
+0000			; 
+0000			;   Assemble (Debian/Ubuntu "z80asm"): 
+0000			;        z80asm -o RAMCHECK.BIN -l RAMCHECK.ASM 
+0000			;   then pad to 2048 bytes with $FF for a 2716 / MB8516 EPROM. 
+0000			; 
+0000			;===================================================================== 
+0000			 
+0000			; ---- I/O ports (as used by the factory IPL) ------------------------- 
+0000			PPIA:     equ   0E0h            ; 8255 port A  (cassette control) 
+0000			PPIB:     equ   0E1h            ; 8255 port B 
+0000			PPIC:     equ   0E2h            ; 8255 port C 
+0000			PPICTL:   equ   0E3h            ; 8255 control / bit set-reset 
+0000			PIOA:     equ   0E8h            ; Z80-PIO port A (bit7 = V-RAM overlay) 
+0000			PIOCTLA:  equ   0E9h 
+0000			PIOB:     equ   0EAh            ; Z80-PIO port B (keyboard data) 
+0000			PIOCTLB:  equ   0EBh 
+0000			GRPHCTL:  equ   0F4h            ; graphics V-RAM control 
+0000			 
+0000			VON:      equ   093h            ; PIO-A: text V-RAM at $D000 (as IPL DISP) 
+0000			VOFF:     equ   013h            ; PIO-A: RAM at $D000-$FFFF (as IPL idle) 
+0000			 
+0000			; ---- screen --------------------------------------------------------- 
+0000			VRAM:     equ   0D000h          ; 40 x 25 text screen, ASCII codes 
+0000			COLS:     equ   40 
+0000			RCOL:     equ   14              ; column where results start 
+0000			 
+0000			; ---- work area in the spare tail of text V-RAM ---------------------- 
+0000			STACKTOP: equ   0D7F0h          ; stack grows down into $D7D0-$D7EF 
+0000			CURPOS:   equ   0D7F0h          ; (2) cursor address in V-RAM 
+0000			ADRXOR:   equ   0D7F2h          ; (1) CPU->physical high-byte XOR (80h/00h) 
+0000			BLKSAV:   equ   0D7F3h          ; (2) start address of current test range 
+0000			ERRW:     equ   0D7F5h          ; (1) failing write data 
+0000			ERRR:     equ   0D7F6h          ; (1) failing read data 
+0000			ERRA:     equ   0D7F7h          ; (2) failing physical address 
+0000			 
+0000			; ---- test range (CPU addresses, identical in both phases) ----------- 
+0000			TSTART:   equ   08000h 
+0000			COPYDST:  equ   08000h          ; = physical $0000 in IPL state 
+0000			ROMSIZE:  equ   0800h 
+0000			 
+0000			;===================================================================== 
+0000			        org     0000h 
+0000			 
+0000 c3 03 00		        jp      START           ; RAM copy gets this patched to JP PHASE2 
+0003			 
+0003			;--------------------------------------------------------------------- 
+0003			; PHASE 1 - IPL state.  Initialise exactly like the factory IPL. 
+0003			;--------------------------------------------------------------------- 
+0003 f3			START:  di 
+0004 3e 82		        ld      a,82h           ; 8255: A=out B=in C=out 
+0006 d3 e3		        out     (PPICTL),a 
+0008 3e 0f		        ld      a,0Fh           ; PIO A = output 
+000a d3 e9		        out     (PIOCTLA),a 
+000c 3e cf		        ld      a,0CFh          ; PIO B = bit mode ... 
+000e d3 eb		        out     (PIOCTLB),a 
+0010 3e ff		        ld      a,0FFh          ; ... all inputs 
+0012 d3 eb		        out     (PIOCTLB),a 
+0014 3e 58		        ld      a,58h           ; BST=1 NST=0 OPEN=1 WRITE=1 
+0016 d3 e2		        out     (PPIC),a 
+0018 3e 12		        ld      a,12h           ; cassette idle 
+001a d3 e0		        out     (PPIA),a 
+001c af			        xor     a 
+001d d3 f4		        out     (GRPHCTL),a     ; graphics: no CPU access, no output 
+001f 3e 93		        ld      a,VON 
+0021 d3 e8		        out     (PIOA),a 
+0023			 
+0023 21 00 d0		        ld      hl,VRAM         ; clear $D000-$FFFF (no stack yet) 
+0026 36 00		CLS:    ld      (hl),00h 
+0028 23			        inc     hl 
+0029 7c			        ld      a,h 
+002a b5			        or      l 
+002b 20 f9		        jr      nz,CLS 
+002d			 
+002d 31 f0 d7		        ld      sp,STACKTOP     ; stack in V-RAM from here on 
+0030 3e 80		        ld      a,80h           ; CPU $8000 = physical $0000 
+0032 32 f2 d7		        ld      (ADRXOR),a 
+0035			 
+0035 cd 35 04		        call    PRAT 
+0038 08 d0		        dw      VRAM+0*COLS+8  
+003a .. 00		        db      "MZ-80B RAM CHECKER 2026",0 
+0052			 
+0052			        ; ---- RAM (I) / (II) : physical $0000-$7FFF ---- 
+0052 cd 35 04		        call    PRAT 
+0055 51 d0		        dw      VRAM+2*COLS+1 
+0057 .. 00		        db      "RAM TEST-1",0 
+0062 cd 28 04		        call    SETCUR 
+0065 5e d0		        dw      VRAM+2*COLS+RCOL 
+0067 21 00 80		        ld      hl,TSTART 
+006a cd 7d 01		        call    BLOCK1 
+006d cd 28 04		        call    SETCUR 
+0070 86 d0		        dw      VRAM+3*COLS+RCOL 
+0072 21 00 c0		        ld      hl,TSTART+4000h 
+0075 cd 7d 01		        call    BLOCK1 
+0078			 
+0078 cd 35 04		        call    PRAT 
+007b a1 d0		        dw      VRAM+4*COLS+1 
+007d .. 00		        db      "RAM TEST-2",0 
+0088 cd 28 04		        call    SETCUR 
+008b ae d0		        dw      VRAM+4*COLS+RCOL 
+008d cd e7 01		        call    TEST2 
+0090			 
+0090			        ;---- copy this ROM into the (now tested) low RAM ------------- 
+0090 cd 35 04		        call    PRAT 
+0093 91 d1		        dw      VRAM+10*COLS+1 
+0095 .. 00		        db      "SWITCHING TO NORMAL STATE",0 
+00af			 
+00af 21 00 00		        ld      hl,0000h 
+00b2 11 00 80		        ld      de,COPYDST 
+00b5 01 00 08		        ld      bc,ROMSIZE 
+00b8 ed b0		        ldir 
+00ba 21 00 00		        ld      hl,0000h        ; verify the copy 
+00bd 11 00 80		        ld      de,COPYDST 
+00c0 01 00 08		        ld      bc,ROMSIZE 
+00c3 1a			CPV:    ld      a,(de) 
+00c4 be			        cp      (hl) 
+00c5 c2 c9 03		        jp      nz,CPYERR 
+00c8 23			        inc     hl 
+00c9 13			        inc     de 
+00ca 0b			        dec     bc 
+00cb 78			        ld      a,b 
+00cc b1			        or      c 
+00cd 20 f4		        jr      nz,CPV 
+00cf			 
+00cf 21 d9 00		        ld      hl,PHASE2       ; patch the copy's entry: JP PHASE2 
+00d2 22 01 80		        ld      (COPYDST+1),hl 
+00d5			 
+00d5 3e 03		        ld      a,03h           ; set PC1 (NST) -> normal state 
+00d7 d3 e3		        out     (PPICTL),a 
+00d9			        ; If NST re-maps without a CPU reset, the next instruction is 
+00d9			        ; fetched from the RAM copy, which is identical: fall through. 
+00d9			 
+00d9			;--------------------------------------------------------------------- 
+00d9			; PHASE 2 - normal state, running from the RAM copy at $0000-$07FF. 
+00d9			;--------------------------------------------------------------------- 
+00d9 f3			PHASE2: di 
+00da 31 f0 d7		        ld      sp,STACKTOP 
+00dd 3e 0f		        ld      a,0Fh           ; re-program the PIO in case NST reset it 
+00df d3 e9		        out     (PIOCTLA),a 
+00e1 3e cf		        ld      a,0CFh 
+00e3 d3 eb		        out     (PIOCTLB),a 
+00e5 3e ff		        ld      a,0FFh 
+00e7 d3 eb		        out     (PIOCTLB),a 
+00e9 af			        xor     a 
+00ea d3 f4		        out     (GRPHCTL),a 
+00ec 3e 93		        ld      a,VON 
+00ee d3 e8		        out     (PIOA),a 
+00f0			 
+00f0 21 7c 01		        ld      hl,MODEFLG      ; are we really executing from RAM? 
+00f3 7e			        ld      a,(hl) 
+00f4 2f			        cpl 
+00f5 77			        ld      (hl),a 
+00f6 be			        cp      (hl) 
+00f7 c2 f2 03		        jp      nz,NSTERR 
+00fa			 
+00fa af			        xor     a               ; CPU address = physical address now 
+00fb 32 f2 d7		        ld      (ADRXOR),a 
+00fe			 
+00fe cd 35 04		        call    PRAT 
+0101 91 d1		        dw      VRAM+10*COLS+1 
+0103 .. 00		        db      "                         ",0 
+011d			 
+011d			        ; ---- RAM (III) / (IV) : physical $8000-$FFFF ---- 
+011d cd 35 04		        call    PRAT 
+0120 f1 d0		        dw      VRAM+6*COLS+1 
+0122 .. 00		        db      "RAM TEST-1",0 
+012d cd 28 04		        call    SETCUR 
+0130 fe d0		        dw      VRAM+6*COLS+RCOL 
+0132 21 00 80		        ld      hl,TSTART 
+0135 cd 7d 01		        call    BLOCK1 
+0138 cd 28 04		        call    SETCUR 
+013b 26 d1		        dw      VRAM+7*COLS+RCOL 
+013d 21 00 c0		        ld      hl,TSTART+4000h 
+0140 cd 7d 01		        call    BLOCK1 
+0143			 
+0143 cd 35 04		        call    PRAT 
+0146 41 d1		        dw      VRAM+8*COLS+1 
+0148 .. 00		        db      "RAM TEST-2",0 
+0153 cd 28 04		        call    SETCUR 
+0156 4e d1		        dw      VRAM+8*COLS+RCOL 
+0158 cd e7 01		        call    TEST2 
+015b			 
+015b cd 35 04		        call    PRAT 
+015e 91 d1		        dw      VRAM+10*COLS+1 
+0160 .. 00		        db      "ALL RAM O.K.  (64K BYTES)",0 
+017a 18 fe		STOP:   jr      STOP            ; finished - press IPL reset to repeat 
+017c			 
+017c a5			MODEFLG: db     0A5h            ; scratch byte: writable only in the copy 
+017d			 
+017d			;===================================================================== 
+017d			; BLOCK1 - RAM TEST-1 over one 16 KB block. 
+017d			;   in : HL = CPU start address, cursor at the result column 
+017d			;   out: prints "xxxx-OK", or "ER-aaaa-ww, rr" and stops. 
+017d			;===================================================================== 
+017d 22 f3 d7		BLOCK1: ld      (BLKSAV),hl 
+0180 01 00 40		        ld      bc,4000h 
+0183 cd bc 01		        call    T1 
+0186 38 11		        jr      c,T1ERR 
+0188 2a f3 d7		        ld      hl,(BLKSAV) 
+018b cd 92 04		        call    PHYS 
+018e cd 5b 04		        call    PRADDR 
+0191 cd 41 04		        call    PRINT 
+0194 .. 00		        db      "-OK",0 
+0198 c9			        ret 
+0199			 
+0199 cd d4 02		T1ERR:  call    SAVERR 
+019c cd 41 04		        call    PRINT 
+019f .. 00		        db      "ER-",0 
+01a3 cd 5b 04		        call    PRADDR 
+01a6 3e 2d		        ld      a,'-' 
+01a8 cd 50 04		        call    PUTC 
+01ab 7a			        ld      a,d 
+01ac cd 60 04		        call    PRHEX 
+01af cd 41 04		        call    PRINT 
+01b2 .. 00		        db      ", ",0 
+01b5 7b			        ld      a,e 
+01b6 cd 60 04		        call    PRHEX 
+01b9 c3 e3 02		        jp      DIAG 
+01bc			 
+01bc			;--------------------------------------------------------------------- 
+01bc			; T1 - write/read $00 and $FF at each byte.  Runs with V-RAM overlay OFF 
+01bc			; and touches no RAM except the byte under test (no stack use). 
+01bc			;   in : HL = start, BC = length 
+01bc			;   out: CY=0 ok ; CY=1 HL = address, D = written, E = read 
+01bc			;--------------------------------------------------------------------- 
+01bc 3e 13		T1:     ld      a,VOFF 
+01be d3 e8		        out     (PIOA),a 
+01c0 36 00		T1L:    ld      (hl),00h 
+01c2 7e			        ld      a,(hl) 
+01c3 b7			        or      a 
+01c4 20 12		        jr      nz,T1E0 
+01c6 36 ff		        ld      (hl),0FFh 
+01c8 7e			        ld      a,(hl) 
+01c9 3c			        inc     a 
+01ca 20 11		        jr      nz,T1EF 
+01cc 23			        inc     hl 
+01cd 0b			        dec     bc 
+01ce 78			        ld      a,b 
+01cf b1			        or      c 
+01d0 20 ee		        jr      nz,T1L 
+01d2 3e 93		        ld      a,VON           ; overlay back on before RET 
+01d4 d3 e8		        out     (PIOA),a 
+01d6 b7			        or      a               ; CY=0 
+01d7 c9			        ret 
+01d8 5f			T1E0:   ld      e,a             ; read 
+01d9 16 00		        ld      d,00h           ; written 
+01db 18 04		        jr      TXERR 
+01dd 3d			T1EF:   dec     a 
+01de 5f			        ld      e,a 
+01df 16 ff		        ld      d,0FFh 
+01e1 3e 93		TXERR:  ld      a,VON 
+01e3 d3 e8		        out     (PIOA),a 
+01e5 37			        scf 
+01e6 c9			        ret 
+01e7			 
+01e7			;===================================================================== 
+01e7			; TEST2 - RAM TEST-2 over 32 KB starting at TSTART. 
+01e7			;   Cursor at the result column.  Prints each pass label as it starts, 
+01e7			;   then "OK", or "ER-aaaa-rr" and stops. 
+01e7			;===================================================================== 
+01e7 cd 41 04		TEST2:  call    PRINT 
+01ea .. 00		        db      "00 ",0 
+01ee 11 00 00		        ld      de,0000h        ; a) $00 ascending 
+01f1 cd 35 02		        call    DOUP 
+01f4 cd 41 04		        call    PRINT 
+01f7 .. 00		        db      "FF ",0 
+01fb 11 ff ff		        ld      de,0FFFFh       ; b) $FF ascending 
+01fe cd 35 02		        call    DOUP 
+0201 cd 41 04		        call    PRINT 
+0204 .. 00		        db      "00 ",0 
+0208 11 00 00		        ld      de,0000h        ; c) $00 descending 
+020b cd 41 02		        call    DODN 
+020e cd 41 04		        call    PRINT 
+0211 .. 00		        db      "FF ",0 
+0215 11 ff ff		        ld      de,0FFFFh       ; d) $FF descending 
+0218 cd 41 02		        call    DODN 
+021b cd 41 04		        call    PRINT 
+021e .. 00		        db      "F0 ",0 
+0222 11 0f f0		        ld      de,0F00Fh       ; e) even=$F0 odd=$0F ascending 
+0225 cd 35 02		        call    DOUP 
+0228 11 f0 0f		        ld      de,00FF0h       ;    even=$0F odd=$F0 descending 
+022b cd 41 02		        call    DODN 
+022e cd 41 04		        call    PRINT 
+0231 .. 00		        db      "OK",0 
+0234 c9			        ret 
+0235			 
+0235 21 00 80		DOUP:   ld      hl,TSTART 
+0238 01 00 80		        ld      bc,8000h 
+023b cd 64 02		        call    PASSUP 
+023e d0			        ret     nc 
+023f 18 0a		        jr      T2ERR 
+0241 21 00 80		DODN:   ld      hl,TSTART 
+0244 01 00 80		        ld      bc,8000h 
+0247 cd 8d 02		        call    PASSDN 
+024a d0			        ret     nc 
+024b cd d4 02		T2ERR:  call    SAVERR 
+024e cd 41 04		        call    PRINT 
+0251 .. 00		        db      "ER-",0 
+0255 cd 5b 04		        call    PRADDR 
+0258 3e 2d		        ld      a,'-' 
+025a cd 50 04		        call    PUTC 
+025d 7b			        ld      a,e 
+025e cd 60 04		        call    PRHEX 
+0261 c3 e3 02		        jp      DIAG 
+0264			 
+0264			;--------------------------------------------------------------------- 
+0264			; PASSUP / PASSDN - fill range with pattern (D at even, E at odd 
+0264			; addresses), reading each byte straight back, then verify the range. 
+0264			; Overlay OFF and no stack use while running. 
+0264			;   in : HL = lowest address, BC = length, D/E = patterns 
+0264			;   out: CY=0 ok ; CY=1 HL = address, D = written, E = read 
+0264			;--------------------------------------------------------------------- 
+0264 cd c8 02		PASSUP: call    SHADOW          ; copy HL/BC/DE to the alternate set 
+0267 3e 13		        ld      a,VOFF 
+0269 d3 e8		        out     (PIOA),a 
+026b 7a			PUF:    ld      a,d 
+026c cb 45		        bit     0,l 
+026e 28 01		        jr      z,PUF1 
+0270 7b			        ld      a,e 
+0271 77			PUF1:   ld      (hl),a 
+0272 ae			        xor     (hl) 
+0273 20 47		        jr      nz,PXERR 
+0275 23			        inc     hl 
+0276 0b			        dec     bc 
+0277 78			        ld      a,b 
+0278 b1			        or      c 
+0279 20 f0		        jr      nz,PUF 
+027b d9			        exx                     ; fresh HL/BC/DE for the verify 
+027c 7a			PUV:    ld      a,d 
+027d cb 45		        bit     0,l 
+027f 28 01		        jr      z,PUV1 
+0281 7b			        ld      a,e 
+0282 ae			PUV1:   xor     (hl) 
+0283 20 37		        jr      nz,PXERR 
+0285 23			        inc     hl 
+0286 0b			        dec     bc 
+0287 78			        ld      a,b 
+0288 b1			        or      c 
+0289 20 f1		        jr      nz,PUV 
+028b 18 29		        jr      PXOK 
+028d			 
+028d 09			PASSDN: add     hl,bc           ; HL = highest address 
+028e 2b			        dec     hl 
+028f cd c8 02		        call    SHADOW 
+0292 3e 13		        ld      a,VOFF 
+0294 d3 e8		        out     (PIOA),a 
+0296 7a			PDF:    ld      a,d 
+0297 cb 45		        bit     0,l 
+0299 28 01		        jr      z,PDF1 
+029b 7b			        ld      a,e 
+029c 77			PDF1:   ld      (hl),a 
+029d ae			        xor     (hl) 
+029e 20 1c		        jr      nz,PXERR 
+02a0 2b			        dec     hl 
+02a1 0b			        dec     bc 
+02a2 78			        ld      a,b 
+02a3 b1			        or      c 
+02a4 20 f0		        jr      nz,PDF 
+02a6 d9			        exx 
+02a7 7a			PDV:    ld      a,d 
+02a8 cb 45		        bit     0,l 
+02aa 28 01		        jr      z,PDV1 
+02ac 7b			        ld      a,e 
+02ad ae			PDV1:   xor     (hl) 
+02ae 20 0c		        jr      nz,PXERR 
+02b0 2b			        dec     hl 
+02b1 0b			        dec     bc 
+02b2 78			        ld      a,b 
+02b3 b1			        or      c 
+02b4 20 f1		        jr      nz,PDV 
+02b6			 
+02b6 3e 93		PXOK:   ld      a,VON 
+02b8 d3 e8		        out     (PIOA),a 
+02ba b7			        or      a 
+02bb c9			        ret 
+02bc			 
+02bc 4f			PXERR:  ld      c,a             ; A = written XOR read 
+02bd cb 45		        bit     0,l 
+02bf 28 01		        jr      z,PXE1 
+02c1 53			        ld      d,e             ; odd address -> E pattern 
+02c2 7a			PXE1:   ld      a,d 
+02c3 a9			        xor     c 
+02c4 5f			        ld      e,a             ; E = read 
+02c5 c3 e1 01		        jp      TXERR           ; D = written 
+02c8			 
+02c8			; SHADOW - copy HL, BC, DE into HL', BC', DE' (overlay must be ON). 
+02c8 dd e1		SHADOW: pop     ix              ; return address 
+02ca e5			        push    hl 
+02cb c5			        push    bc 
+02cc d5			        push    de 
+02cd d9			        exx 
+02ce d1			        pop     de 
+02cf c1			        pop     bc 
+02d0 e1			        pop     hl 
+02d1 d9			        exx 
+02d2 dd e9		        jp      (ix) 
+02d4			 
+02d4			;===================================================================== 
+02d4			; Error handling 
+02d4			;===================================================================== 
+02d4			; SAVERR - HL = CPU address, D = written, E = read. 
+02d4			;          Converts HL to physical and keeps copies for DIAG. 
+02d4 cd 92 04		SAVERR: call    PHYS 
+02d7 22 f7 d7		        ld      (ERRA),hl 
+02da 7a			        ld      a,d 
+02db 32 f5 d7		        ld      (ERRW),a 
+02de 7b			        ld      a,e 
+02df 32 f6 d7		        ld      (ERRR),a 
+02e2 c9			        ret 
+02e3			 
+02e3			; DIAG - extra detail below the results, then stop. 
+02e3 cd 35 04		DIAG:   call    PRAT 
+02e6 e1 d1		        dw      VRAM+12*COLS+1 
+02e8 .. 00		        db      "ADDRESS ",0 
+02f1 2a f7 d7		        ld      hl,(ERRA) 
+02f4 cd 5b 04		        call    PRADDR 
+02f7 cd 41 04		        call    PRINT 
+02fa .. 00		        db      "  WRITE ",0 
+0303 3a f5 d7		        ld      a,(ERRW) 
+0306 cd 60 04		        call    PRHEX 
+0309 cd 41 04		        call    PRINT 
+030c .. 00		        db      "  READ ",0 
+0314 3a f6 d7		        ld      a,(ERRR) 
+0317 cd 60 04		        call    PRHEX 
+031a			 
+031a cd 35 04		        call    PRAT 
+031d 09 d2		        dw      VRAM+13*COLS+1 
+031f .. 00		        db      "BLOCK  RAM (",0 
+032c 3a f8 d7		        ld      a,(ERRA+1)      ; block = A15,A14 
+032f 07			        rlca 
+0330 07			        rlca 
+0331 e6 03		        and     03h 
+0333 4f			        ld      c,a             ; C = block 0..3 
+0334 87			        add     a,a 
+0335 5f			        ld      e,a 
+0336 16 00		        ld      d,0 
+0338 21 14 04		        ld      hl,BLKNAM 
+033b 19			        add     hl,de 
+033c 7e			        ld      a,(hl) 
+033d 23			        inc     hl 
+033e 66			        ld      h,(hl) 
+033f 6f			        ld      l,a 
+0340 7e			DG1:    ld      a,(hl)          ; print block name 
+0341 23			        inc     hl 
+0342 b7			        or      a 
+0343 28 05		        jr      z,DG2 
+0345 cd 50 04		        call    PUTC 
+0348 18 f6		        jr      DG1 
+034a 3e 29		DG2:    ld      a,')' 
+034c cd 50 04		        call    PUTC 
+034f			 
+034f cd 35 04		        call    PRAT 
+0352 31 d2		        dw      VRAM+14*COLS+1 
+0354 .. 00		        db      "CHECK  RAM",0 
+035f 79			        ld      a,c             ; first IC number = block*8 + 1 
+0360 87			        add     a,a 
+0361 87			        add     a,a 
+0362 87			        add     a,a 
+0363 3c			        inc     a 
+0364 4f			        ld      c,a 
+0365 3a f5 d7		        ld      a,(ERRW) 
+0368 21 f6 d7		        ld      hl,ERRR 
+036b ae			        xor     (hl) 
+036c 06 08		        ld      b,8             ; bit 0 .. bit 7 
+036e 0f			DG3:    rrca 
+036f 30 0b		        jr      nc,DG4 
+0371 f5			        push    af 
+0372 3e 20		        ld      a,' ' 
+0374 cd 50 04		        call    PUTC 
+0377 79			        ld      a,c 
+0378 cd 77 04		        call    PRDEC 
+037b f1			        pop     af 
+037c 0c			DG4:    inc     c 
+037d 10 ef		        djnz    DG3 
+037f			 
+037f 3a f5 d7		        ld      a,(ERRW)        ; every bit wrong -> more likely an 
+0382 21 f6 d7		        ld      hl,ERRR         ; address / RAS / CAS / decode fault 
+0385 ae			        xor     (hl) 
+0386 3c			        inc     a 
+0387 20 29		        jr      nz,DG5 
+0389 cd 35 04		        call    PRAT 
+038c 59 d2		        dw      VRAM+15*COLS+1 
+038e .. 00		        db      "(ALL 8 BITS: CHECK ADDRESS/CONTROL)",0 
+03b2			DG5: 
+03b2			 
+03b2 cd 35 04		        call    PRAT 
+03b5 81 d2		        dw      VRAM+16*COLS+1 
+03b7 .. 00		        db      "CHECK STOPPED.",0 
+03c6 c3 7a 01		        jp      STOP 
+03c9			 
+03c9 eb			CPYERR: ex      de,hl 
+03ca 1a			        ld      a,(de) 
+03cb 57			        ld      d,a             ; D = ROM byte (written) 
+03cc 5e			        ld      e,(hl)          ; E = RAM byte (read) 
+03cd cd d4 02		        call    SAVERR 
+03d0 cd 35 04		        call    PRAT 
+03d3 91 d1		        dw      VRAM+10*COLS+1 
+03d5 .. 00		        db      "ROM COPY ERROR           ",0 
+03ef c3 e3 02		        jp      DIAG 
+03f2			 
+03f2 cd 35 04		NSTERR: call    PRAT 
+03f5 91 d1		        dw      VRAM+10*COLS+1 
+03f7 .. 00		        db      "NST FAILED - NOT IN RAM  ",0 
+0411 c3 7a 01		        jp      STOP 
+0414			 
+0414 1c 04 1e 04 21 04 25 04	BLKNAM: dw      BN1,BN2,BN3,BN4 
+041c .. 00		BN1:    db      "I",0 
+041e .. 00		BN2:    db      "II",0 
+0421 .. 00		BN3:    db      "III",0 
+0425 .. 00		BN4:    db      "IV",0 
+0428			 
+0428			;===================================================================== 
+0428			; Screen output.  Cursor kept in CURPOS (in V-RAM).  Overlay must be ON. 
+0428			;===================================================================== 
+0428			; SETCUR - set cursor to the word following the CALL. 
+0428 e3			SETCUR: ex      (sp),hl 
+0429 d5			        push    de 
+042a 5e			        ld      e,(hl) 
+042b 23			        inc     hl 
+042c 56			        ld      d,(hl) 
+042d 23			        inc     hl 
+042e ed 53 f0 d7	        ld      (CURPOS),de 
+0432 d1			        pop     de 
+0433 e3			        ex      (sp),hl 
+0434 c9			        ret 
+0435			 
+0435			; PRAT - set cursor from the following word, then print the following 
+0435			;        zero-terminated string.  All registers preserved. 
+0435 e3			PRAT:   ex      (sp),hl 
+0436 d5			        push    de 
+0437 5e			        ld      e,(hl) 
+0438 23			        inc     hl 
+0439 56			        ld      d,(hl) 
+043a 23			        inc     hl 
+043b ed 53 f0 d7	        ld      (CURPOS),de 
+043f d1			        pop     de 
+0440 e3			        ex      (sp),hl         ; fall into PRINT 
+0441			 
+0441			; PRINT - print the zero-terminated string following the CALL. 
+0441			;         All registers preserved. 
+0441 e3			PRINT:  ex      (sp),hl 
+0442 f5			        push    af 
+0443 7e			PRL:    ld      a,(hl) 
+0444 23			        inc     hl 
+0445 b7			        or      a 
+0446 28 05		        jr      z,PRE 
+0448 cd 50 04		        call    PUTC 
+044b 18 f6		        jr      PRL 
+044d f1			PRE:    pop     af 
+044e e3			        ex      (sp),hl 
+044f c9			        ret 
+0450			 
+0450			; PUTC - write A at the cursor and advance.  All registers preserved. 
+0450 e5			PUTC:   push    hl 
+0451 2a f0 d7		        ld      hl,(CURPOS) 
+0454 77			        ld      (hl),a 
+0455 23			        inc     hl 
+0456 22 f0 d7		        ld      (CURPOS),hl 
+0459 e1			        pop     hl 
+045a c9			        ret 
+045b			 
+045b			; PRADDR - print HL as 4 hex digits. 
+045b 7c			PRADDR: ld      a,h 
+045c cd 60 04		        call    PRHEX 
+045f 7d			        ld      a,l             ; fall into PRHEX 
+0460			 
+0460			; PRHEX - print A as 2 hex digits.  All registers preserved. 
+0460 f5			PRHEX:  push    af 
+0461 0f			        rrca 
+0462 0f			        rrca 
+0463 0f			        rrca 
+0464 0f			        rrca 
+0465 cd 69 04		        call    PRNIB 
+0468 f1			        pop     af 
+0469 f5			PRNIB:  push    af 
+046a e6 0f		        and     0Fh 
+046c c6 90		        add     a,90h 
+046e 27			        daa 
+046f ce 40		        adc     a,40h 
+0471 27			        daa 
+0472 cd 50 04		        call    PUTC 
+0475 f1			        pop     af 
+0476 c9			        ret 
+0477			 
+0477			; PRDEC - print A (0..99) as 2 decimal digits (leading space). 
+0477 c5			PRDEC:  push    bc 
+0478 06 2f		        ld      b,'0'-1 
+047a 04			PD1:    inc     b 
+047b d6 0a		        sub     10 
+047d 30 fb		        jr      nc,PD1 
+047f c6 3a		        add     a,'0'+10 
+0481 4f			        ld      c,a 
+0482 78			        ld      a,b 
+0483 fe 30		        cp      '0' 
+0485 20 02		        jr      nz,PD2 
+0487 3e 20		        ld      a,' ' 
+0489 cd 50 04		PD2:    call    PUTC 
+048c 79			        ld      a,c 
+048d cd 50 04		        call    PUTC 
+0490 c1			        pop     bc 
+0491 c9			        ret 
+0492			 
+0492			; PHYS - convert CPU address in HL to physical RAM address. 
+0492 f5			PHYS:   push    af 
+0493 3a f2 d7		        ld      a,(ADRXOR) 
+0496 ac			        xor     h 
+0497 67			        ld      h,a 
+0498 f1			        pop     af 
+0499 c9			        ret 
+049a			 
+049a			ROMEND: 
+049a			        end 
+# End of file RAMCHECK.ASM
+049a

@@ -1,0 +1,22 @@
+﻿pos_x,pos_y,rotation,side,designator,mpn,pack,footprint,value,mount_type
+208.59,-56.165,-90.0,top,C1,,,CP_Axial_L40.0mm_D16.0mm_P48.00mm_Horizontal,4700µF 25V,tht
+193.35,-64.42,-90.0,top,C2,,,C_Disc_D4.7mm_W2.5mm_P5.00mm,100nF,tht
+123.5,-56.165,-90.0,top,C3,,,CP_Radial_D16.0mm_P7.50mm,1000µF,tht
+137.47,-56.165,-90.0,top,C4,,,C_Disc_D4.7mm_W2.5mm_P5.00mm,100nF,tht
+117.745,-105.695,180.0,top,C5,,,CP_Radial_D7.5mm_P2.50mm,100µF,tht
+115.245,-113.315,0.0,top,C6,,,C_Disc_D4.7mm_W2.5mm_P5.00mm,100nF,tht
+169.22,-111.41,-90.0,top,C7,,,CP_Radial_D7.5mm_P2.50mm,100µF,tht
+180.65,-111.41,-90.0,top,C8,,,C_Disc_D4.7mm_W2.5mm_P5.00mm,100nF,tht
+172.395,-56.165,180.0,top,D1,,,D_DO-201AD_P15.24mm_Horizontal,1N5822,tht
+107.625,-56.165,-90.0,top,D2,,,D_DO-201AE_P15.24mm_Horizontal,1.5KE15A,tht
+93.02,-67.415,90.0,top,F1,,,Littelfuse_5x20mm,T4A,tht
+90.5,-153.0,0.0,top,H1,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole,tht
+212.5,-40.0,0.0,top,H2,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole,tht
+212.5,-153.0,0.0,top,H3,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole,tht
+147.63,-56.165,0.0,top,J1,,,TJC1-1A,+12V (S),tht
+93.02,-94.415,90.0,top,J2,,,JST_VH_B2P-VH_1x02_P3.96mm_Vertical,DC In,tht
+147.63,-71.405,0.0,top,J3,,,TJC1-3A,To Tape Deck,tht
+151.855,-144.43,0.0,top,J4,,,TJC1-4A,To Motherboard,tht
+178.11,-56.165,0.0,top,R1,,,R_Axial_DIN0414_L11.9mm_D4.5mm_P15.24mm_Horizontal,2.2Ω 2W,tht
+140.52,-111.41,90.0,top,U1,,,TO-3,PSU5,tht
+112.705,-95.535,0.0,top,U2,,,TO-220-3_Vertical,R-78CK5.0-0.5,tht

@@ -1,13 +1,15 @@
 ﻿Designator,Quantity,Value,Footprint,Package,MPN,DNP,Mount_Type,Description,KiLib_Generator
-C1,1,4700µF,CP_Radial_D16.0mm_P7.50mm,,,,tht,Polarized capacitor,capacitor/THT/other
-"C2, C4, C6, C8",4,100nF,C_Disc_D3.8mm_W2.6mm_P2.50mm,,,,tht,Unpolarized capacitor,capacitor/THT/other
+C1,1,4700µF 25V,CP_Axial_L40.0mm_D16.0mm_P48.00mm_Horizontal,,,,tht,Polarized capacitor,capacitor/THT/other
+"C2, C4, C6, C8",4,100nF,C_Disc_D4.7mm_W2.5mm_P5.00mm,,,,tht,Unpolarized capacitor,capacitor/THT/other
 C3,1,1000µF,CP_Radial_D16.0mm_P7.50mm,,,,tht,Polarized capacitor,
 "C5, C7",2,100µF,CP_Radial_D7.5mm_P2.50mm,,,,tht,Polarized capacitor,
 D1,1,1N5822,D_DO-201AD_P15.24mm_Horizontal,,,,tht,"40V 3A Schottky Barrier Rectifier Diode, DO-201AD",diode/THT
-J1,1,+12V (NS),TJC1-1A,,,,tht,"Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)",
-J2,1,DC In,TJC1-2A,,,,tht,"Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)",
+D2,1,1.5KE15A,D_DO-201AE_P15.24mm_Horizontal,,,,tht,"1500W unidirectional TVS diode, DO-201AE",diode/THT
+F1,1,T4A,Littelfuse_5x20mm,,,,tht,Fuse,
+J1,1,+12V (S),TJC1-1A,,,,tht,"Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)",
+J2,1,DC In,JST_VH_B2P-VH_1x02_P3.96mm_Vertical,,,,tht,"Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/JST
 J3,1,To Tape Deck,TJC1-3A,,,,tht,"Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)",
 J4,1,To Motherboard,TJC1-4A,,,,tht,"Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)",
-R1,1,2.2Ω,R_Axial_DIN0414_L11.9mm_D4.5mm_P15.24mm_Horizontal,,,,tht,Resistor,resistor/THT
+R1,1,2.2Ω 2W,R_Axial_DIN0414_L11.9mm_D4.5mm_P15.24mm_Horizontal,,,,tht,Resistor,resistor/THT
 U1,1,PSU5,TO-3,,,,tht,"Positive 1.5A 35V Linear Regulator, Fixed Output 5V, TO-220/TO-263/TO-252",
 U2,1,R-78CK5.0-0.5,TO-220-3_Vertical,,,,tht,"Positive 1.5A 35V Linear Regulator, Fixed Output 5V, TO-220/TO-263/TO-252",

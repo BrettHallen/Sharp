@@ -12,6 +12,8 @@ NOTE! Any PCB designs are untested unless stated otherwise.  I have done my best
 - [Part 2: Keyboard refurbishment starts](https://youtu.be/vS2Di7rVlAI)
 - [Part 3: Power Supply](https://youtu.be/JZkt_DzX6Ko)
 - [Part 4: Monitor & Tape Deck](https://youtu.be/Ke3hOiWCVKM)
+- [Part 5: New power supply](https://youtu.be/C5JBbC6FNag)
+- [Part 6: It kinda works](https://youtu.be/guZFLZZtFYg)
 
 ## Specs
 - Z80 at 4MHz (LH0080A)
@@ -42,6 +44,7 @@ NOTE! Any PCB designs are untested unless stated otherwise.  I have done my best
 ## [ROMs](/Sharp_MZ-80B/ROMs)
 - 2KB Initial Program Loader (IPL)
 - 2KB Character Generator
+- 2KB RAM CHECK re-creation (needs testing)
 
 ## [32KB RAM Expansion](/Sharp_MZ-80B/Sharp_MZ-80B_RAM_III_IV_Expansion)
 Internal expansion board to increase the RAM from 32KB to 64KB.  This design is from the Service Manual and so currently uses 4116 RAM chips.<br>
@@ -107,7 +110,7 @@ Some notes:
 - If I can replace the DRAM with SRAM, there is no longer a need for the -5V rail
 - If I don't physically use the tape deck then there is no need for the +15V, i.e. "unregulated +12V"
 
-![New DC power supply](/Sharp_MZ-80B/Sharp_MZ-80B_New_Power_Supply/Sharp_MZ-80B_New_Power_Supply.kicad_pro_3D.png)
+![New DC power supply](/Sharp_MZ-80B/Sharp_MZ-80B_New_Power_Supply/Sharp_MZ-80B_New_Power_Supply_S.png)
 
 ## [External Audio/Video Output](/Sharp_MZ-80B/Sharp_MZ-CVBS)
 A re-design of an [existing design](https://github.com/gamo256/MZ_CVBS) for replacing the CRT with an LCD, I think.  The original design uses obsolete parts (well, hard to get in Australia) so I've tried to re-design.  Let's see if it works ...<br>

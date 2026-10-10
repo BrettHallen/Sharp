@@ -26,3 +26,7 @@ Sharp_MZ-80B/Sharp_MZ-80GMSD/fp-info-cache
 /Sharp_PC-2500/Sharp_PC-2500_PS_PWB/Sharp_PC-2500_PS_PWB-backups
 /Sharp_PC-2500/Sharp_PC-2500_Symbols-backups
 /Sharp_MZ-80B/Sharp_MZ-CVBS/Sharp_MZ-80CVBS-backups
+Sharp_MZ-80B/Schematics/sym-lib-table
+*.lck
+Sharp_MZ-80B/Sharp_MZ-80GMK/sym-lib-table
+Sharp_PC-2500/Sharp_PC-2500_PS_PWB/sym-lib-table

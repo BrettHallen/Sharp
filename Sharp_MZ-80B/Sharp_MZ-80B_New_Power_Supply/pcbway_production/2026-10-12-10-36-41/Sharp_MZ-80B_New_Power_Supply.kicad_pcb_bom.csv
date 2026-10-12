@@ -7,7 +7,7 @@ D1,1,1N5822,D_DO-201AD_P15.24mm_Horizontal,,,,tht,"40V 3A Schottky Barrier Recti
 D2,1,1.5KE15A,D_DO-201AE_P15.24mm_Horizontal,,,,tht,"1500W unidirectional TVS diode, DO-201AE",diode/THT
 F1,1,T4A,Littelfuse_5x20mm,,,,tht,Fuse,
 J1,1,+12V (S),TJC1-1A,,,,tht,"Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)",
-J2,1,DC In,JST_VH_B2P-VH_1x02_P3.96mm_Vertical,,,,tht,"Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)",connector/JST
+J2,1,DC In,TJC1-2A,,,,tht,"Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)",
 J3,1,To Tape Deck,TJC1-3A,,,,tht,"Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)",
 J4,1,To Motherboard,TJC1-4A,,,,tht,"Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)",
 R1,1,2.2Ω 2W,R_Axial_DIN0414_L11.9mm_D4.5mm_P15.24mm_Horizontal,,,,tht,Resistor,resistor/THT

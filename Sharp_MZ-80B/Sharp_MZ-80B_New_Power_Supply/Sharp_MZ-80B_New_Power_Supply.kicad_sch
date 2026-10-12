@@ -3621,7 +3621,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_JST:JST_VH_B2P-VH_1x02_P3.96mm_Vertical"
+		(property "Footprint" "Clueless_Engineer:TJC1-2A"
 			(at 25.4 74.93 0)
 			(hide yes)
 			(show_name no)

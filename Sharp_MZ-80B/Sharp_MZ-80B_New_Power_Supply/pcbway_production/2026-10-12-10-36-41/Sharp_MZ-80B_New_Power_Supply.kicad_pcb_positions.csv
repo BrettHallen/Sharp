@@ -14,7 +14,7 @@
 212.5,-40.0,0.0,top,H2,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole,tht
 212.5,-153.0,0.0,top,H3,,,MountingHole_3.2mm_M3_DIN965_Pad_TopBottom,MountingHole,tht
 147.63,-56.165,0.0,top,J1,,,TJC1-1A,+12V (S),tht
-93.02,-94.415,90.0,top,J2,,,JST_VH_B2P-VH_1x02_P3.96mm_Vertical,DC In,tht
+93.02,-101.725,90.0,top,J2,,,TJC1-2A,DC In,tht
 147.63,-71.405,0.0,top,J3,,,TJC1-3A,To Tape Deck,tht
 151.855,-144.43,0.0,top,J4,,,TJC1-4A,To Motherboard,tht
 178.11,-56.165,0.0,top,R1,,,R_Axial_DIN0414_L11.9mm_D4.5mm_P15.24mm_Horizontal,2.2Ω 2W,tht

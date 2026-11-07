@@ -1,11 +1,11 @@
 # Sharp MZ-80B Monitor SB-1520: program listing
 
-Introduction<br>
+## Introduction
 This manual describes the commands and subroutines of MONITOR SB-1520, the standard system software for the MZ-80B personal computer. It shows how to write programs and set up data in machine language.<br>
 MONITOR SB-1520 is the standard monitor program in the MZ-80B system software. Its main job is to support the BASIC interpreter SB-5520, the DISK BASIC interpreter SB-6520, the double-precision DISK BASIC interpreter SB-6620 and others. When control is passed to the monitor, it can also be used on its own as a machine language monitor. You can then write machine-language subroutines for BASIC programs directly and do simple debugging. You can also write your own system programs, create cassette files, and control the MZ-80B in your own way.<br>
 For reference, the complete assembly listing of MONITOR SB-1520 is included at the end of the manual.<br>
 
-はじめに<br>
+## はじめに
 本書は、パーソナルコンピュータMZ-80Bの標準システムソフトウェアMONITOR SB-1520の命令仕様とサブルーチンの機能を解説しており、機械語（machine language）によってプログラムを作成したり、データを構成する場合、どのようにしたらよいかが示されています。<br>
 MONITOR SB-1520は、MZ-80Bのシステムソフトウェアの標準モニタプログラムであり、BASICインタープリタSB-5520、DISK BASICインタープリタSB-6520、倍精度DISK BASICインタープリタSB-6620などをバックアップする働きがおもな役割となっていますが、モニタへコントロールを移すことによって、独立した機械語モニタ(machine language monitor)として使用することができます。これによって、BASICプログラムの機械語サブルーチンを直接作成したり、簡単なデバッグを行うことができるだけでなく、自由にシステムプログラムを作成したり、カセットファイルを作成したり、独自の方法でMZ-80Bをコントロールすることができます。<br>
 巻末には参考のためMONITOR SB-1520の全アセンブリ・リストを掲載しております。<br>

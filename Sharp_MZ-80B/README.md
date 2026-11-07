@@ -40,6 +40,7 @@ NOTE! Any PCB designs are untested unless stated otherwise.  I have done my best
 ## [Manuals](/Sharp_MZ-80B/Manuals)
 - MZ-80B Service Manual
 - MZ-80B Owners Manual
+- MZ-80 Monitor Reference Manual (SB-1520)
 
 ## [ROMs](/Sharp_MZ-80B/ROMs)
 - 2KB Initial Program Loader (IPL)
